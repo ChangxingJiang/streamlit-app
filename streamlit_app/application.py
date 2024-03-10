@@ -5,12 +5,36 @@ Streamlit 应用
 import inspect
 import os
 import sys
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Dict, Any
 
 import streamlit.web.cli
 
 from streamlit_app.errors import StreamlitAppDeployError
 from streamlit_app.page import StreamlitPage
+
+
+class PageInfo:
+    """页面信息"""
+
+    def __init__(self, name: str, page_class: Type[StreamlitPage], params: Dict[str, Any]):
+        self._name = name
+        self._page_class = page_class
+        self._params = params
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def page_class(self) -> Type[StreamlitPage]:
+        return self._page_class
+
+    @property
+    def params(self) -> Dict[str, Any]:
+        return self._params
+
+    def __repr__(self) -> str:
+        return f"PageInfo[name={self.name}, page_class={self.page_class.__name__}, params={self.params}]"
 
 
 class Application:
@@ -34,12 +58,12 @@ class Application:
         self.deploy_dir = deploy_dir
         self.auto_clear_deploy_dir = auto_clear_deploy_dir
 
-        self.main_page: Optional[Type[StreamlitPage]] = None
-        self.pages: List[Type[StreamlitPage]] = []
+        self.main_page: Optional[PageInfo] = None
+        self.pages: List[PageInfo] = []
 
         self.is_deploy: bool = False
 
-    def set_main_page(self, page: Type[StreamlitPage]) -> None:
+    def set_main_page(self, page: Type[StreamlitPage], params: Dict[str, Any] = None) -> None:
         """设置主页面，如已经设置主页面则覆盖它
 
         Parameters
@@ -47,9 +71,12 @@ class Application:
         page : Type[StreamlitPage]
             主页面类
         """
-        self.main_page = page
+        if params is None:
+            params = {}
+        assert issubclass(page, StreamlitPage), f"page.__name__={page.__name__}"
+        self.main_page = PageInfo(page(params=params).page_name(), page, params)
 
-    def append_page(self, page: Type[StreamlitPage]) -> None:
+    def append_page(self, page: Type[StreamlitPage], params: Dict[str, Any] = None) -> None:
         """添加其他页面
 
         Parameters
@@ -57,27 +84,16 @@ class Application:
         page : Type[StreamlitPage]
             其他页面类
         """
-        self.pages.append(page)
+        if params is None:
+            params = {}
+        assert issubclass(page, StreamlitPage), f"page.__class__.__name__={page.__class__.__name__}"
+        self.pages.append(PageInfo(page(params=params).page_name(), page, params))
 
     def deploy(self) -> None:
         """部署 Streamlit 应用服务"""
         # 检查是否设置了主页面
         if self.main_page is None:
             raise StreamlitAppDeployError("未定义主页面")
-
-        # 检查主页面和子页面是否为 StreamlitPage 的子类
-        if not issubclass(self.main_page, StreamlitPage):
-            raise StreamlitAppDeployError(f"{self.main_page.__name__} 不是 StreamlitPage 的子类")
-        for page in self.pages:
-            if not issubclass(page, StreamlitPage):
-                raise StreamlitAppDeployError(f"{page.__name__} 不是 StreamlitPage 的子类")
-
-        # 检查主页面和子页面的 main_page 方法是否为静态方法
-        if self.main_page.page_name.__code__.co_argcount != 0:
-            raise StreamlitAppDeployError(f"{self.main_page.__name__}.page_name() 不是静态方法")
-        for page in self.pages:
-            if page.page_name.__code__.co_argcount != 0:
-                raise StreamlitAppDeployError(f"{page.__name__}.page_name() 不是静态方法")
 
         # 检查部署路径
         if not os.path.isdir(self.deploy_dir):
@@ -91,24 +107,23 @@ class Application:
         print(f"Streamlit 环境部署位置: {self.deploy_dir}")
 
         # 部署主页面
-        self._deploy_page(self.main_page, os.path.join(self.deploy_dir, f"{self.main_page.page_name()}.py"))
+        self._deploy_page(self.main_page, os.path.join(self.deploy_dir, f"{self.main_page.name}.py"))
 
         # 创建 pages 文件夹
         os.mkdir(os.path.join(self.deploy_dir, "pages"))
 
         # 部署其他页面
         for page in self.pages:
-            self._deploy_page(page, os.path.join(self.deploy_dir, "pages", f"{page.page_name()}.py"))
+            self._deploy_page(page, os.path.join(self.deploy_dir, "pages", f"{page.name}.py"))
 
     @staticmethod
-    def _deploy_page(page_class: Type[StreamlitPage], file_path: str):
+    def _deploy_page(page: PageInfo, file_path: str):
         """部署 1 个页面"""
-
         # 获取类的基本信息
-        class_path = inspect.getsourcefile(page_class)
+        class_path = inspect.getsourcefile(page.page_class)
         class_dir_path = os.path.dirname(class_path)
         class_file_name = os.path.basename(class_path).replace(".py", "")
-        class_name = page_class.__name__
+        class_name = page.page_class.__name__
 
         # 将文件夹添加到环境变量
         sys.path.append(class_dir_path)
@@ -117,15 +132,15 @@ class Application:
         with open(file_path, "w", encoding="UTF-8") as file:
             file.write(f"from {class_file_name} import {class_name} \n"
                        f"\n"
-                       f"{class_name}().draw_page()")
+                       f"{class_name}(params={page.params}).draw_page()")
+        print(f"[Deployment] 部署完成: {page}")
 
     def start(self):
         """启动 Streamlit 应用服务"""
         # 将首页添加到配置信息中
         if len(sys.argv) > 1:
-            sys.argv[1] = os.path.join(self.deploy_dir, f"{self.main_page.page_name()}.py")
-        else:
-            sys.argv.append(os.path.join(self.deploy_dir, f"{self.main_page.page_name()}.py"))
+            sys.argv = sys.argv[:1]
+        sys.argv.append(os.path.join(self.deploy_dir, f"{self.main_page.name}.py"))
 
         # 启动 streamlit
         streamlit.web.cli.main_run()

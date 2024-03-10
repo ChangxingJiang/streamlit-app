@@ -7,14 +7,14 @@ with open("README.md", "r", encoding="UTF-8") as file:
 
 setup(
     name="streamlit-app",  # 包名
-    version="0.0.1",
+    version="0.0.2",
     description="A applet to use streamlit objectification",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="changxing",
     author_email="1278729001@qq.com",
-    url="",
-    install_requires=["streamlit==1.31.0"],
+    url="https://github.com/ChangxingJiang/streamlit-app",
+    install_requires=["streamlit>=1.31.0"],
     license="MIT License",
     packages=find_packages(),
     platforms=["all"],
@@ -26,6 +26,10 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Libraries"
     ]
 )

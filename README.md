@@ -18,9 +18,8 @@ from streamlit_app import Application, StreamlitPage
 
 class MyMainPage(StreamlitPage):
 
-    @staticmethod
-    def page_name() -> str:
-        return "test_main_page"
+    def page_name(self) -> str:
+        return self.params.get("name")
 
     def draw_page(self) -> None:
         st.title("Main Page Title")
@@ -29,8 +28,7 @@ class MyMainPage(StreamlitPage):
 
 class MySubPage(StreamlitPage):
 
-    @staticmethod
-    def page_name() -> str:
+    def page_name(self) -> str:
         return "test_sub_page"
 
     def draw_page(self) -> None:
@@ -40,7 +38,7 @@ class MySubPage(StreamlitPage):
 
 if __name__ == "__main__":
     application = Application()
-    application.set_main_page(MyMainPage)
+    application.set_main_page(MyMainPage, params={"name": "Main Page Title"})
     application.append_page(MySubPage)
     application.deploy_and_start()
 ```
