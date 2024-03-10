@@ -63,26 +63,30 @@ class Application:
 
         self.is_deploy: bool = False
 
-    def set_main_page(self, page: Type[StreamlitPage], params: Dict[str, Any] = None) -> None:
+    def set_main_page(self, page: Type[StreamlitPage], params: Optional[Dict[str, Any]] = None) -> None:
         """设置主页面，如已经设置主页面则覆盖它
 
         Parameters
         ----------
         page : Type[StreamlitPage]
             主页面类
+        params : Optional[Dict[str, Any]], default = None
+            主页面类初始化时的参数
         """
         if params is None:
             params = {}
         assert issubclass(page, StreamlitPage), f"page.__name__={page.__name__}"
         self.main_page = PageInfo(page(params=params).page_name(), page, params)
 
-    def append_page(self, page: Type[StreamlitPage], params: Dict[str, Any] = None) -> None:
+    def append_page(self, page: Type[StreamlitPage], params: Optional[Dict[str, Any]] = None) -> None:
         """添加其他页面
 
         Parameters
         ----------
         page : Type[StreamlitPage]
             其他页面类
+        params : Optional[Dict[str, Any]], default = None
+            主页面类初始化时的参数
         """
         if params is None:
             params = {}
