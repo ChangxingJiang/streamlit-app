@@ -130,6 +130,7 @@ class Application:
         class_name = page.page_class.__name__
 
         # 将文件夹添加到环境变量
+        print(f"添加文件夹路径到 python: {class_dir_path}")
         sys.path.append(class_dir_path)
 
         # 创建页面文件
