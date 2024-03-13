@@ -44,3 +44,16 @@ if __name__ == "__main__":
 ```
 
 实例化 `StreamlitPage.Application` 类，调用 `set_main_page()` 方法设置主页面，使用 `append_page()` 方法设置其他页面，在设置完成后，调用 `deploy_and_start()` 方法部署并启动 Streamlit 服务。
+
+## 修改记录
+
+##### 0.0.3
+
+- 新增：根据调用栈自动计算组件的唯一键的工具
+- 修复：修复不同路径下 py 脚本文件名相同无法正常展示的 Bug
+
+##### 0.0.2
+
+- 新增：支持在初始化 StreamPage 时添加参数，将 StreamPage 的静态方法改为非静态方法
+
+##### 0.0.1：初始化
