@@ -11,6 +11,7 @@ import streamlit.web.cli
 
 from streamlit_app.errors import StreamlitAppDeployError
 from streamlit_app.page import StreamlitPage
+from streamlit_app.utils import clear_folder, get_import_name_by_file_path
 
 
 class PageInfo:
@@ -124,18 +125,12 @@ class Application:
     def _deploy_page(page: PageInfo, file_path: str):
         """部署 1 个页面"""
         # 获取类的基本信息
-        class_path = inspect.getsourcefile(page.page_class)
-        class_dir_path = os.path.dirname(class_path)
-        class_file_name = os.path.basename(class_path).replace(".py", "")
         class_name = page.page_class.__name__
-
-        # 将文件夹添加到环境变量
-        print(f"添加文件夹路径到 python: {class_dir_path}")
-        sys.path.append(class_dir_path)
+        module_path = get_import_name_by_file_path(inspect.getsourcefile(page.page_class))
 
         # 创建页面文件
         with open(file_path, "w", encoding="UTF-8") as file:
-            file.write(f"from {class_file_name} import {class_name} \n"
+            file.write(f"from {module_path} import {class_name} \n"
                        f"\n"
                        f"{class_name}(params={page.params}).draw_page()")
         print(f"[Deployment] 部署完成: {page}")
@@ -154,20 +149,3 @@ class Application:
         """部署并启动 Streamlit 应用服务"""
         self.deploy()
         self.start()
-
-
-def clear_folder(folder_path: str) -> None:
-    """清空文件夹
-
-    Parameters
-    ----------
-    folder_path : str
-        文件夹的路径
-    """
-    for file_name in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, file_name)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-        else:
-            clear_folder(file_path)
-            os.rmdir(file_path)
